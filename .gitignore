@@ -1,13 +1,10 @@
-﻿# Environnement
+﻿@"
 .venv/
 __pycache__/
 *.pyc
 
-# Données (gérées par DVC)
-data/**
+# Ignore data folder but keep DVC metafiles
+data/
 !data/**/*.dvc
 !data/**/.gitignore
-
-# OS
-.DS_Store
-Thumbs.db
+"@ | Set-Content .gitignore -Encoding UTF8

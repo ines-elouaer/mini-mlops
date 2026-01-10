@@ -1,10 +1,8 @@
-﻿@"
-.venv/
+﻿.venv/
 __pycache__/
 *.pyc
 
-# Ignore data folder but keep DVC metafiles
-data/
-!data/**/*.dvc
-!data/**/.gitignore
-"@ | Set-Content .gitignore -Encoding UTF8
+# Ignore all data files, keep DVC metafiles
+/data/**
+!/data/**/*.dvc
+!/data/**/.gitignore

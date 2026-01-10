@@ -1,4 +1,13 @@
-﻿.venv/
+﻿# Environnement
+.venv/
 __pycache__/
 *.pyc
-data/
+
+# Données (gérées par DVC)
+data/**
+!data/**/*.dvc
+!data/**/.gitignore
+
+# OS
+.DS_Store
+Thumbs.db

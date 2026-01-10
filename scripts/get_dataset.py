@@ -1,4 +1,5 @@
 from sklearn.datasets import load_breast_cancer
+import pandas as pd
 from pathlib import Path
 
 def main():
@@ -11,7 +12,7 @@ def main():
     out_path = out_dir / "breast_cancer.csv"
     df.to_csv(out_path, index=False)
 
-    print("✅ Saved:", out_path)
+    print("✅ Dataset créé:", out_path)
     print("Shape:", df.shape)
     print("Labels:", df["label"].value_counts().to_dict())
 

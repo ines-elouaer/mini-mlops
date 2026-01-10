@@ -1,8 +1,13 @@
-﻿.venv/
+﻿# venv
+.venv/
+
+# python
 __pycache__/
 *.pyc
 
-# Ignore all data files, keep DVC metafiles
-/data/**
-!/data/**/*.dvc
-!/data/**/.gitignore
+# ignore data content (tracked by DVC)
+data/**
+
+# but keep DVC metafiles
+!data/**/*.dvc
+!data/**/.gitkeep

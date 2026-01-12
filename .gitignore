@@ -11,3 +11,7 @@ data/**
 # but keep DVC metafiles
 !data/**/*.dvc
 !data/**/.gitkeep
+
+mlruns/
+models/
+mlflow.db

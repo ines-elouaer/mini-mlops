@@ -6,26 +6,27 @@ from typing import Any, Dict, List, Optional
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # -----------------------
 # Config
 # -----------------------
-# Mets ici TON fichier modèle (celui que tu veux servir)
-# Exemple: models/model_xxx.joblib
-MODEL_PATH = Path("models")  # dossier
-MODEL_FILE = None  # si tu veux forcer un fichier précis: "model_XXXX.joblib"
+MODEL_PATH = Path("models")
+MODEL_FILE = "model.joblib"
+ # ex: "model_xxx.joblib" si tu veux forcer
+
+WEB_DIR = Path("web")  # web/index.html + web/app.js
 
 
 def _load_model():
-    # 1) si MODEL_FILE est défini → on charge ce fichier
     if MODEL_FILE:
         p = MODEL_PATH / MODEL_FILE
         if not p.exists():
             raise FileNotFoundError(f"Model file not found: {p}")
         return joblib.load(p)
 
-    # 2) sinon on prend le dernier .joblib du dossier models/
     if not MODEL_PATH.exists():
         raise FileNotFoundError("models/ folder not found. Train and save a model first.")
 
@@ -36,26 +37,34 @@ def _load_model():
     return joblib.load(candidates[0])
 
 
-# -----------------------
-# FastAPI app
-# -----------------------
 app = FastAPI(title="Breast Cancer Predictor API", version="1.0")
 
+# Servir /web/*
+# Important: mount marche même si web n'existe pas, donc on protège
+if WEB_DIR.exists():
+    app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
+
+
+@app.get("/ui")
+def ui():
+    index = WEB_DIR / "index.html"
+    if not index.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="UI not found. Create web/index.html (and web/app.js) at project root.",
+        )
+    return FileResponse(str(index))
+
+
+# Charger modèle
 model = _load_model()
 
 
 class PredictRequest(BaseModel):
-    # On accepte un dict "feature -> valeur"
-    # Swagger mettra "additionalProp1" par défaut, mais nous on va IGNORER les clés inconnues.
     features: Dict[str, float] = Field(
         ...,
-        description="Dictionnaire {nom_feature: valeur}. Les noms doivent correspondre aux colonnes d'entraînement.",
-        examples=[
-            {
-                "mean radius": 14.0,
-                "mean texture": 20.0
-            }
-        ],
+        description="Dictionnaire {nom_feature: valeur}. Doit correspondre aux colonnes d'entraînement.",
+        examples=[{"mean radius": 14.0, "mean texture": 20.0}],
     )
 
 
@@ -67,7 +76,7 @@ class PredictResponse(BaseModel):
 
 @app.get("/")
 def root() -> Dict[str, str]:
-    return {"message": "API is running. Go to /docs for Swagger UI."}
+    return {"message": "API is running. Go to /docs for Swagger UI. Go to /ui for simple UI."}
 
 
 @app.get("/health")
@@ -77,7 +86,6 @@ def health() -> Dict[str, str]:
 
 @app.get("/features")
 def get_expected_features() -> Dict[str, Any]:
-    """Pratique: permet de copier/coller la liste des features attendues."""
     if not hasattr(model, "feature_names_in_"):
         return {"error": "Model has no feature_names_in_. Retrain with a DataFrame (pandas) input."}
     return {"expected_features": list(model.feature_names_in_)}
@@ -94,26 +102,24 @@ def predict(payload: PredictRequest) -> PredictResponse:
     expected: List[str] = list(model.feature_names_in_)
     incoming = payload.features
 
-    # 1) garder uniquement les features attendues (ignore additionalProp1, etc.)
+    # Garde uniquement les features attendues (ignore clés inconnues)
     filtered = {k: v for k, v in incoming.items() if k in expected}
 
-    # 2) vérifier les manquantes
     missing = [f for f in expected if f not in filtered]
     if missing:
         raise HTTPException(
             status_code=422,
-            detail=f"Missing {len(missing)} feature(s). Example missing: {missing[:5]} ... "
-                   f"Use GET /features to see the full list.",
+            detail=(
+                f"Missing {len(missing)} feature(s). Example missing: {missing[:5]} ... "
+                f"Use GET /features to see the full list."
+            ),
         )
 
-    # 3) construire DataFrame dans le bon ordre
     row = {f: filtered[f] for f in expected}
     df = pd.DataFrame([row], columns=expected)
 
-    # 4) prédiction
     pred = int(model.predict(df)[0])
 
-    # proba si dispo
     proba = None
     if hasattr(model, "predict_proba"):
         proba = float(model.predict_proba(df)[0][1])

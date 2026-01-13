@@ -10,14 +10,13 @@ from sklearn.metrics import f1_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
-
 DATA_PATH = "data/raw/breast_cancer.csv"
-
+STUDY_NAME = "breast-cancer-optuna"
+STORAGE = "sqlite:///optuna.db"
 
 def objective(trial):
-    # Hyperparams à tester
-    C = trial.suggest_float("C", 0.01, 10.0, log=True)
-    max_iter = trial.suggest_int("max_iter", 100, 600)
+    C = trial.suggest_float("C", 0.001, 100.0, log=True)
+    max_iter = trial.suggest_int("max_iter", 100, 1000)
 
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["label"])
@@ -44,12 +43,24 @@ def objective(trial):
 
     return f1
 
-
 if __name__ == "__main__":
     mlflow.set_experiment("breast-cancer-optuna")
 
-    study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=8)
+    # Run parent = résumé
+    with mlflow.start_run(run_name="optuna-summary"):
+        study = optuna.create_study(
+            direction="maximize",
+            study_name=STUDY_NAME,
+            storage=STORAGE,
+            load_if_exists=True
+        )
 
-    print("Best params:", study.best_params)
-    print("Best f1:", study.best_value)
+        study.optimize(objective, n_trials=10)
+
+        # log best trial in parent
+        mlflow.log_param("best_C", study.best_params["C"])
+        mlflow.log_param("best_max_iter", study.best_params["max_iter"])
+        mlflow.log_metric("best_f1", study.best_value)
+
+        print("Best params:", study.best_params)
+        print("Best f1:", study.best_value)

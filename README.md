@@ -17,30 +17,7 @@ Ce projet implémente un **pipeline MLOps complet** pour un cas d’usage de **c
 - GitHub Actions (CI/CD)
 - Kubernetes (minikube)
 
----
 
-## 📂 Structure du projet
-mini-mlops/
-├── data/ # Données versionnées avec DVC
-├── models/ # Modèles entraînés (.joblib)
-├── src/
-│ ├── api.py # API FastAPI
-│ ├── train.py # Entraînement + MLflow
-│ ├── pipelines/ # ZenML pipeline & steps
-│ └── run_pipeline.py
-├── scripts/
-│ ├── make_payload.py
-│ └── optuna_search.py
-├── k8s/
-│ ├── deployment.yaml
-│ └── service.yaml
-├── docker-compose.yml
-├── Dockerfile
-├── requirements.api.txt
-├── requirements.txt
-├── payload.json
-├── .github/workflows/ci.yml
-└── README.md
 
 
 ---
@@ -141,9 +118,15 @@ http://localhost:8000/docs
 
 ---
 
-### Versioning
+### Interface utilisateur (UI)
 
-v1 : modèle baseline
+Une interface web simple permet :
 
-v2 : modèle amélioré
+de charger automatiquement les features,
+
+de remplir un exemple,
+
+d’envoyer une requête à l’API,
+
+de visualiser la prédiction et la probabilité.
 

@@ -14,5 +14,6 @@ data/**
 
 mlruns/
 models/
+!models/model.joblib
 !models/.gitkeep
 mlflow.db
